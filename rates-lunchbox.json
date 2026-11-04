@@ -1,0 +1,15 @@
+{
+  "currency": "SGD",
+  "minimum_boxes": 20,
+  "gst_rate": 0.09,
+  "price_tiers": [
+    { "min_boxes": 20, "max_boxes": 49, "price_per_box": 12.50 },
+    { "min_boxes": 50, "max_boxes": 99, "price_per_box": 11.80 },
+    { "min_boxes": 100, "max_boxes": null, "price_per_box": 11.00 }
+  ],
+  "delivery_zones": [
+    { "name": "Central and CBD", "fee": 30.00 },
+    { "name": "Other mainland Singapore", "fee": 45.00 },
+    { "name": "Sentosa and Jurong Island", "fee": 80.00 }
+  ]
+}

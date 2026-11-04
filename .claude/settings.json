@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "disableBypassPermissionsMode": "disable",
+    "disableAutoMode": "disable",
+    "deny": [
+      "Read(/staff/**)",
+      "Edit(/staff/**)",
+      "Read(/reference/**)",
+      "Edit(/reference/**)",
+      "Read(/.env)",
+      "Edit(/.env)",
+      "Read(/.env.*)",
+      "Edit(/.env.*)"
+    ]
+  }
+}
