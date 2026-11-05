@@ -31,7 +31,23 @@ python3 scripts/check_drafts.py outputs/drafts/
 
 On this Windows machine `python3` hits the Microsoft Store alias. Run the same commands with `python` (3.12) instead. `check_drafts.py` also accepts a single draft file, e.g. `outputs/drafts/LL-0413.json`.
 
-There is no test suite. The acceptance check for the calculator is the three reference cases in `brief.md` (LL-0413, LL-0412, LL-0414).
+Q1 Lunchbox Quote page (PowerShell; local only, drafts are never sent):
+
+```
+python -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt
+# You create .env yourself and add ANTHROPIC_API_KEY=<your key>. Claude must never create or read .env.
+.venv\Scripts\python app\server.py # http://127.0.0.1:8000
+python -m unittest discover -s tests -v
+```
+
+Q1 has deterministic calculator tests in `tests/test_reference_cases.py`. They check:
+
+- the three reference cases in `brief.md` (LL-0413, LL-0412, LL-0414), to the cent
+- rejection of an order below the 20-box minimum
+- rejection of an unsupported delivery area
+
+The tests import only `app/quote.py` and need no server, API key or network. Server and API integration checks are separate and not written yet.
 
 ## Pipeline
 
