@@ -13,6 +13,7 @@ RUN_DATE = date(2026, 9, 30)
 ROOT = Path(__file__).resolve().parent.parent
 RATES = json.loads((ROOT / "rates-lunchbox.json").read_text(), parse_float=Decimal)
 ZONES = {z["name"]: z["fee"] for z in RATES["delivery_zones"]}
+ALIASES = json.loads((ROOT / "area-aliases.json").read_text())
 
 
 class OrderStop(Exception):
@@ -40,7 +41,7 @@ def map_date(raw, log):
 
 
 def map_zone(area):
-    return ZONES[area]
+    return ZONES[ALIASES.get(area, area)]
 
 
 def calculate(boxes, fee):
