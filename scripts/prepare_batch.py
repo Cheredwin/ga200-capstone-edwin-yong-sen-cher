@@ -7,6 +7,8 @@ from datetime import date, datetime
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 
+from guardrail import check_note
+
 RUN_DATE = date(2026, 9, 30)
 ROOT = Path(__file__).resolve().parent.parent
 RATES = json.loads((ROOT / "rates-lunchbox.json").read_text(), parse_float=Decimal)
@@ -68,7 +70,7 @@ Rules:
 """
 
 
-def write_prompt(order, customer, boxes, area, price, fee, gst, total, notes):
+def write_prompt(order, customer, boxes, area, price, fee, gst, total):
     lines = [
         "ORDER",
         f"customer: {customer}",
@@ -79,8 +81,6 @@ def write_prompt(order, customer, boxes, area, price, fee, gst, total, notes):
         f"gst: {gst:.2f}",
         f"total_payable: {total:.2f}",
     ]
-    if notes:
-        lines.append(notes)
     lines += ["Write the quotation email using the order details above.", "Return JSON only.", ""]
     path = ROOT / "outputs" / "prompts" / f"{order}.txt"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -89,7 +89,7 @@ def write_prompt(order, customer, boxes, area, price, fee, gst, total, notes):
 
 def main(orders_file):
     print(f"Lunchbox Desk batch {RUN_DATE} 07:00")
-    prepared, stopped = {}, 0
+    prepared, stopped, flagged = {}, 0, 0
     with open(orders_file, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
             order = row["order"]
@@ -115,8 +115,21 @@ def main(orders_file):
                 log("ERROR", f"{type(err).__name__}: {err} in {frame.name} ({Path(frame.filename).name}:{frame.lineno}) -> open item")
                 stopped += 1
                 continue
+            reasons = check_note(notes)
+            if reasons:
+                flagged += 1
+                log("FLAG", "FLAGGED FOR PRIYA")
+                print("  guardrail reason: suspicious instruction-like note")
+                for r in reasons:
+                    print(f"    - {r}")
+                print(f"  note (ignored data, copied literally): {json.dumps(notes, ensure_ascii=False)}")
+                print("  quote from approved fields only (boxes, area, rates-lunchbox.json):")
+                print(f"    {boxes} x S${price:.2f} = S${price * boxes:.2f} | delivery S${fee:.2f} | "
+                      f"GST {RATES['gst_rate'] * 100:.0f}% S${gst:.2f} | total S${total:.2f}")
+                print("  customer output: NONE. No drafter prompt written, nothing drafted or sent.")
+                continue
             log("ok", f"{str(boxes) + ' boxes':<10} {price:.2f}  fee {fee:.2f}  gst {format(gst, '.2f'):<8}total {total:.2f}")
-            write_prompt(order, row["customer"], boxes, row["area"], price, fee, gst, total, notes)
+            write_prompt(order, row["customer"], boxes, row["area"], price, fee, gst, total)
             prepared[order] = {
                 "customer": row["customer"], "boxes": boxes, "area": row["area"],
                 "price_per_box": f"{price:.2f}", "delivery_fee": f"{fee:.2f}",
@@ -124,7 +137,7 @@ def main(orders_file):
             }
     (ROOT / "outputs").mkdir(exist_ok=True)
     (ROOT / "outputs" / "prepared.json").write_text(json.dumps(prepared, indent=2))
-    print(f"{len(prepared)} prepared, {stopped} open items. prompts written to outputs/prompts/")
+    print(f"{len(prepared)} prepared, {flagged} flagged for Priya, {stopped} open items. prompts written to outputs/prompts/")
 
 
 if __name__ == "__main__":
